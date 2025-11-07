@@ -3,7 +3,40 @@ from django.utils import timezone
 from django.http import HttpResponseForbidden
 from django.core.cache import cache
 from ip_tracking.models import RequestLog, BlockedIP
-from ipgeolocation import IpGeolocationAPI
+
+# Try to import the official ipgeolocation client; if it's not installed,
+# provide a small fallback implementation that queries a free geolocation API.
+try:
+    from importlib import import_module
+
+    try:
+        IpGeolocationAPI = import_module("ipgeolocation").IpGeolocationAPI
+    except AttributeError:
+        IpGeolocationAPI = import_module("ipgeolocation.ipgeolocation").IpGeolocationAPI
+except Exception:
+    import urllib.request
+    import json
+
+    class IpGeolocationAPI:
+        def __init__(self, api_key=None):
+            # api_key is accepted for compatibility but not used in the fallback
+            self.api_key = api_key
+
+        def get_geolocation(self, ip):
+            # Use a free geolocation service as a fallback (ip-api.com).
+            # Returns a dict similar to the ipgeolocation client.
+            try:
+                url = f"http://ip-api.com/json/{ip}"
+                with urllib.request.urlopen(url, timeout=5) as resp:
+                    data = json.load(resp)
+                if data.get("status") == "success":
+                    return {
+                        "country_name": data.get("country", ""),
+                        "city": data.get("city", "")
+                    }
+            except Exception:
+                pass
+            return {}
 
 class IPTrackingMiddleware:
     def __init__(self, get_response):
