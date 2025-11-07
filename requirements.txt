@@ -1,0 +1,8 @@
+Django==4.2.7
+django-ipware==6.0.3
+django-ratelimit==3.1.0
+django-ipgeolocation==1.0.3
+celery==5.3.6
+redis==5.0.1
+ipinfo==5.0.1
+scikit-learn==1.5.0
